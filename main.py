@@ -4,7 +4,7 @@
 
 import os
 import signal
-from utils import get_processable_img, get_processable_raw, is_processable_raw, open_nef_thumb
+from utils import get_processable_img, load_thumb, is_processable_img, is_thumb
 import yaml
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -18,11 +18,18 @@ import time
 with open("./config.yaml", "r")as f:
     config = yaml.safe_load(f)
 
+def is_big_img(path: Path)-> bool:
+    path.stat().st_size
+    return path.stat().st_size > 1 * 1024 * 1024
+
 def create_thumb(path: Path, to: Path):
     "在to文件夹里创建raw文件的缩略图"
-    img = open_nef_thumb(path)
-    to_path = to / (path.stem + ".thumb.jpg")
-    if not to_path.exists():
+    to_path = to / (path.name + ".thumb.jpg")
+    if to_path.exists() or is_thumb(path):
+        return
+
+    if is_processable_img(path) and is_big_img(path):
+        img = load_thumb(path)
         img.save(to_path)
         print("Thumb created:", path, to_path)
 
@@ -39,16 +46,16 @@ class ImgCreateHandler(FileSystemEventHandler):
 
     def wait_and_process(self, path: Path):
         self.wait_for_complete(path)
-        if is_processable_raw(path):
-            self.task_queue.put({
-                "path": path,
-                "to": self.to
-            })
+        self.task_queue.put({
+            "path": path,
+            "to": self.to
+        })
 
-    def wait_for_complete(self, filepath: Path):
+    def wait_for_complete(self, path: Path):
+        "等待文件传输完成"
         previous_size = -1
         while True:
-            current_size = os.path.getsize(str(filepath))
+            current_size = path.stat().st_size
             if current_size == previous_size:
                 break
             previous_size = current_size
@@ -56,15 +63,8 @@ class ImgCreateHandler(FileSystemEventHandler):
 
 def init_img_proc(from_: Path, to: Path, task_queue: queue.Queue):
     "处理现有的图片"
-    imgs_from = set(get_processable_raw(from_))
-    imgs_to_stem = set(map((lambda x:x.stem), get_processable_img(to)))
-    imgs_to_proc = []
-
-    for i in imgs_from:
-        if not i.stem in imgs_to_stem:
-            imgs_to_proc.append(i)
-
-    for path in imgs_to_proc:
+    imgs_from = set(get_processable_img(from_))
+    for path in imgs_from:
         task_queue.put({
             "path": path,
             "to": to
