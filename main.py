@@ -2,6 +2,7 @@
 通过watchdog监控raw格式文件，并将其转换为jpg格式的缩略图，放在另一个文件夹里
 '''
 
+import os
 import signal
 from utils import get_processable_img, get_processable_raw, is_processable_raw, open_nef_thumb
 import yaml
@@ -32,11 +33,24 @@ class ImgCreateHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         path = Path(event.src_path)
+        threading.Thread(target=self.wait_and_process, args=(path,)).start()
+
+    def wait_and_process(self, path: Path):
+        self.wait_for_complete(path)
         if is_processable_raw(path):
             self.task_queue.put({
                 "path": path,
                 "to": self.to
-                })
+            })
+
+    def wait_for_complete(self, filepath: Path):
+        previous_size = -1
+        while True:
+            current_size = os.path.getsize(str(filepath))
+            if current_size == previous_size:
+                break
+            previous_size = current_size
+            time.sleep(0.5)
 
 def init_img_proc(from_: Path, to: Path, task_queue: queue.Queue):
     "处理现有的图片"

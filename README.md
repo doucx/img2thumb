@@ -14,3 +14,6 @@
 
 ## 运行
 设置好`config.yaml`后，运行`main.py`
+
+## TODO
+增加对更多种类raw文件的支持
