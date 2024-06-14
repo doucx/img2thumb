@@ -1,5 +1,5 @@
-# Imh to Thumb
-通过watchdog监控图片，并提取出jpg格式的缩略图
+# Img to Thumb
+通过watchdog监控图片，并对大小大于1m的图片提取出jpg格式的缩略图
 
 ## 配置
 使用yaml作为配置文件,格式：
@@ -16,4 +16,4 @@
 设置好`config.yaml`后，运行`main.py`
 
 ## TODO
-- 增加对更多种类raw格式支持
+- 增加更多设置
