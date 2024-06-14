@@ -76,12 +76,21 @@ def init_observer(from_: Path, to: Path, task_queue:queue.Queue):
 
 def worker(task_queue: queue.Queue, stop_flag: threading.Event):
     while not stop_flag.is_set():
-        task = task_queue.get()
+        try:
+            task = task_queue.get(timeout=1)  # 添加超时以避免长时间阻塞
+        except queue.Empty:
+            continue
+
         if task == None:
             task_queue.task_done()
             break
-        create_thumb(task["path"], task["to"])
-        task_queue.task_done()
+
+        try:
+            create_thumb(task["path"], task["to"])
+            task_queue.task_done()
+        except Exception as e:
+            # 这里可以记录日志或采取其他适当的错误处理措施
+            print(f"Error processing task {task}: {e}")
 
 def main():
     task_queue = queue.Queue()
