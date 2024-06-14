@@ -1,0 +1,3 @@
+-
+  from: ./camera
+  to: ./camera-jpg
