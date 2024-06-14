@@ -21,8 +21,10 @@ with open("./config.yaml", "r")as f:
 def create_thumb(path: Path, to: Path):
     "在to文件夹里创建raw文件的缩略图"
     img = open_nef_thumb(path)
-    img.save(to / (path.stem + ".jpg"))
-    print("Thumb created:", path, (to / (path.stem + ".jpg")))
+    to_path = to / (path.stem + ".thumb.jpg")
+    if not to_path.exists():
+        img.save(to_path)
+        print("Thumb created:", path, to_path)
 
 class ImgCreateHandler(FileSystemEventHandler):
     def __init__(self, from_:Path, to:Path, task_queue:queue.Queue) -> None:
